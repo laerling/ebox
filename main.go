@@ -17,11 +17,11 @@ func main() {
 	homeDirName := usr.HomeDir
 	emacsLinkName := homeDirName + "/.emacs.d"
 
-	// check ~/.emacs.d
-	emacsLinkStat, _ := os.Stat(emacsLinkName)
-	emacsLinkExists := emacsLinkStat != nil
-	// if ~/.emacs.d is a symlink, it is not guaranteed that its destination exists!
+	// check existence of ~/.emacs.d
+	// Just because Readlink succeeds doesn't mean that the links' destination exists!
 	emacsDir, readLinkErr := os.Readlink(emacsLinkName)
+	// But it does mean that the link itself exists.
+	emacsLinkExists := readLinkErr == nil
 
 	// exit if non-empty argument supplied and ~/.emacs.d exists, but is not a symlink
 	// non-empty argument means that we'll switch to the distro with that argument as name
@@ -30,14 +30,34 @@ func main() {
 		os.Exit(1)
 	}
 
-	// list distros if no arguments supplied
-	if len(os.Args) == 1 {
+	// if argument supplied, set distro, else list existing distros
+	if len(os.Args) > 1 {
+		setDistro(homeDirName, os.Args[1], emacsLinkExists)
+	} else {
 		listDistros(homeDirName, path.Base(emacsDir))
-		return
+	}
+}
+
+func setDistro(homeDirName, distroName string, removeOldSymlink bool) {
+
+	// check that distro exists
+	distroDirName := homeDirName + "/.emacs.d-" + distroName
+	if _, err := os.Stat(distroDirName); os.IsNotExist(err) {
+		fmt.Fprintln(os.Stderr, "No such distro: '"+distroName+"'")
+		os.Exit(1)
 	}
 
-	// else, set a distro
-	setDistro(homeDirName, os.Args[1], emacsLinkExists)
+	// Remove old symlink
+	emacsLink := homeDirName + "/.emacs.d"
+	if removeOldSymlink {
+		err := os.Remove(emacsLink)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	// Create new symlink
+	os.Symlink(distroDirName, emacsLink)
 }
 
 func listDistros(homeDirName, activeDistroDir string) {
@@ -74,26 +94,4 @@ func listDistros(homeDirName, activeDistroDir string) {
 			fmt.Println(filename)
 		}
 	}
-}
-
-func setDistro(homeDirName, distroName string, removeOldSymlink bool) {
-
-	// check that distro exists
-	distroDirName := homeDirName + "/.emacs.d-" + distroName
-	if _, err := os.Stat(distroDirName); os.IsNotExist(err) {
-		fmt.Fprintln(os.Stderr, "No such distro: '"+distroName+"'")
-		os.Exit(1)
-	}
-
-	// Remove old symlink
-	emacsLink := homeDirName + "/.emacs.d"
-	if removeOldSymlink {
-		err := os.Remove(emacsLink)
-		if err != nil {
-			panic(err)
-		}
-	}
-
-	// Create new symlink
-	os.Symlink(distroDirName, emacsLink)
 }
