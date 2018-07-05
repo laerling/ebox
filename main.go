@@ -34,7 +34,7 @@ func main() {
 	if len(os.Args) > 1 {
 		setDistro(homeDirName, os.Args[1], emacsLinkExists)
 	} else {
-		listDistros(homeDirName, path.Base(emacsDir))
+		listDistros(homeDirName, emacsDir)
 	}
 }
 
@@ -60,38 +60,51 @@ func setDistro(homeDirName, distroName string, removeOldSymlink bool) {
 	os.Symlink(distroDirName, emacsLink)
 }
 
-func listDistros(homeDirName, activeDistroDir string) {
+func listDistros(homeDirName, activeDistroPath string) {
 
-	var currentDistro string
+	activeDistroDir := path.Base(activeDistroPath)
+	// activeDistroDir = ".emacs.d-<distro>"
+	// activeDistroDir = "/home/<user>/.emacs.d-<distro>"
 
-	// get current distro if present
-	if activeDistroDir != "" /* link has been read */ {
-		if !strings.HasPrefix(activeDistroDir, distroPrefix) {
-			fmt.Fprintln(os.Stderr, "Distribution \""+activeDistroDir+
-				"\" must start with \""+distroPrefix+"\". Aborting")
-			os.Exit(1)
-		}
-		currentDistro = activeDistroDir[len(distroPrefix):]
+	// get active distro if present
+	if !strings.HasPrefix(activeDistroDir, distroPrefix) {
+		fmt.Fprintln(os.Stderr, "Distribution \""+activeDistroDir+
+			"\" must start with \""+distroPrefix+"\". Aborting")
+		os.Exit(1)
 	}
+	activeDistro := activeDistroDir[len(distroPrefix):]
 
-	// list distros, highlighting the current one, if present
+	// open home directory
 	homeDir, err := os.Open(homeDirName)
 	if err != nil {
 		panic(err)
 	}
+
+	// open home directory
 	filenames, err := homeDir.Readdirnames(0)
 	if err != nil {
 		panic(err)
 	}
+
+	// list distros, highlighting the active one, if present
+	activeDistroPresent := false
 	for _, filename := range filenames {
 		if strings.HasPrefix(filename, ".emacs.d-") {
 			filename = filename[len(distroPrefix):]
-			if filename == currentDistro {
+			if filename == activeDistro {
 				fmt.Print("* ")
+				activeDistroPresent = true
 			} else {
 				fmt.Print("  ")
 			}
 			fmt.Println(filename)
 		}
+	}
+
+	// warn if active distro not present
+	if !activeDistroPresent {
+		fmt.Fprintln(os.Stderr)
+		fmt.Fprintln(os.Stderr, "Warning: ~/.emacs.d does not seem to point to a valid distribution")
+		fmt.Fprintln(os.Stderr, "         ~/.emacs.d -> "+activeDistroPath)
 	}
 }
