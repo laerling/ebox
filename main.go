@@ -40,6 +40,12 @@ func main() {
 
 func setDistro(homeDirName, distroName string, removeOldSymlink bool) {
 
+	// check that no Emacs instance is running
+	if emacsInstanceRunning() {
+		fmt.Fprintln(os.Stderr, "Emacs already running. Please terminate it and try again.")
+		os.Exit(1)
+	}
+
 	// check that distro exists
 	distroDirName := homeDirName + "/.emacs.d-" + distroName
 	if _, err := os.Stat(distroDirName); os.IsNotExist(err) {
@@ -80,7 +86,7 @@ func listDistros(homeDirName, activeDistroPath string) {
 		panic(err)
 	}
 
-	// open home directory
+	// read all filenames from home directory
 	filenames, err := homeDir.Readdirnames(0)
 	if err != nil {
 		panic(err)
@@ -107,4 +113,46 @@ func listDistros(homeDirName, activeDistroPath string) {
 		fmt.Fprintln(os.Stderr, "Warning: ~/.emacs.d does not seem to point to a valid distribution")
 		fmt.Fprintln(os.Stderr, "         ~/.emacs.d -> "+activeDistroPath)
 	}
+}
+
+func emacsInstanceRunning() bool {
+	/*
+		Though we could simply run `ps` and search for "emacs" in the output,
+		this program strives to be as dependency-free as possible.
+		This shouldn't be (much) less performant than ps anyway.
+	*/
+
+	// open /proc
+	procDir, err := os.Open("/proc")
+	if err != nil {
+		panic(err)
+	}
+
+	// read all filenames from home directory
+	filenames, err := procDir.Readdirnames(0)
+	if err != nil {
+		panic(err)
+	}
+
+	// read every /proc/*/comm file. That's what ps does. That's what heroes do.
+	for _, filename := range filenames {
+
+		// try opening /proc/<filename>/comm
+		commFile, _ := os.Open("/proc/" + filename + "/comm")
+		if commFile == nil {
+			continue
+		}
+
+		// read process name from comm file
+		emacsProcessName := "emacs"
+		commBuffer := make([]byte, len(emacsProcessName))
+		commFile.Read(commBuffer)
+
+		// check name
+		if string(commBuffer) == emacsProcessName {
+			return true
+		}
+	}
+
+	return false
 }
