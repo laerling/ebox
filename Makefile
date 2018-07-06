@@ -4,7 +4,7 @@ EXE=ebox
 ARGS=
 
 $(EXE): $(wildcard *.go)
-	if [ -x /usr/bin/goimports ]; then goimports -w "$<"; fi
+	goimports -w $+
 	go build -o "$(EXE)"
 	go install
 
