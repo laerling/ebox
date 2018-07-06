@@ -1,4 +1,4 @@
-package ebox
+package main
 
 import (
 	"fmt"
