@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"sort"
 	"strings"
 )
 
@@ -64,19 +65,28 @@ func listDistros(homeDirName, activeDistroPath string) {
 		panic(err)
 	}
 
-	// list distros, highlighting the active one, if present
-	activeDistroPresent := false
+	// filter distributions
+	distros := make(sortableStringSlice, 0, len(filenames))
 	for _, filename := range filenames {
 		if strings.HasPrefix(filename, ".emacs.d-") {
-			filename = filename[len(distroPrefix):]
-			if filename == activeDistro {
-				fmt.Print("* ")
-				activeDistroPresent = true
-			} else {
-				fmt.Print("  ")
-			}
-			fmt.Println(filename)
+			distros = append(distros, filename)
 		}
+	}
+
+	// sort filenames alphabetically (case-insensitively)
+	sort.Sort(distros)
+
+	// list distros, highlighting the active one, if present
+	activeDistroPresent := false
+	for _, distro := range distros {
+		distro = distro[len(distroPrefix):]
+		if distro == activeDistro {
+			fmt.Print("* ")
+			activeDistroPresent = true
+		} else {
+			fmt.Print("  ")
+		}
+		fmt.Println(distro)
 	}
 
 	// warn if active distro not present

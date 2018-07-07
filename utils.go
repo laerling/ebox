@@ -2,11 +2,30 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
 )
+
+// sortableStringSlice makes []string sortable. The sorting is case-insensitive.
+type sortableStringSlice []string
+
+// implementation of sort.Interface on stringSlice
+func (s sortableStringSlice) Len() int {
+	return len(s)
+}
+
+// implementation of sort.Interface on stringSlice
+func (s sortableStringSlice) Less(i, j int) bool {
+	return strings.ToLower(s[i]) < strings.ToLower(s[j])
+}
+
+// implementation of sort.Interface on stringSlice
+func (s sortableStringSlice) Swap(i, j int) {
+	tmp := s[i]
+	s[i] = s[j]
+	s[j] = tmp
+}
 
 // checkNoEmacsBlocking checks that no running Emacs instance is using the
 // current distribution. If such an instance is found, checkNoEmacsBlocking

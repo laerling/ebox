@@ -22,13 +22,13 @@ func main() {
 	emacsLinkExists := readLinkErr == nil
 
 	// exit if non-empty argument supplied and ~/.emacs.d exists, but is not a symlink
-	// non-empty argument means that we'll switch to the distro with that argument as name
+	// non-empty argument means that we'll switch to the distribution with that argument as name
 	if len(os.Args) > 1 && len(os.Args[1]) > 0 && emacsLinkExists && readLinkErr != nil {
 		fmt.Fprintln(os.Stderr, emacsLinkName, "is not a symbolic link. Aborting")
 		os.Exit(1)
 	}
 
-	// if argument supplied, set distro, else list existing distros
+	// if argument supplied, set distribution, else list existing distributions
 	if len(os.Args) > 1 {
 		setDistro(homeDirName, os.Args[1], emacsLinkExists)
 	} else {
