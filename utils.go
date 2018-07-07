@@ -1,13 +1,17 @@
 package main
 
-import "os"
+import (
+	"errors"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"strings"
+)
 
-func emacsInstanceRunning() bool {
-	/*
-		Though we could simply run `ps` and search for "emacs" in the output,
-		this program strives to be as dependency-free as possible.
-		This shouldn't be (much) less performant than ps anyway.
-	*/
+// checkNoEmacsBlocking checks that no running Emacs instance is using the
+// current distribution. If such an instance is found, checkNoEmacsBlocking
+// returns its pid and an error, else emptystring and nil.
+func checkNoEmacsBlocking() (string, error) {
 
 	// open /proc
 	procDir, err := os.Open("/proc")
@@ -15,31 +19,42 @@ func emacsInstanceRunning() bool {
 		panic(err)
 	}
 
-	// read all filenames from home directory
+	// read all filenames from /proc
 	filenames, err := procDir.Readdirnames(0)
 	if err != nil {
 		panic(err)
 	}
 
-	// read every /proc/*/comm file. That's what ps does. That's what heroes do.
-	for _, filename := range filenames {
+	// read every /proc/*/cmdline file
+	for _, pid := range filenames {
 
-		// try opening /proc/<filename>/comm
-		commFile, _ := os.Open("/proc/" + filename + "/comm")
-		if commFile == nil {
+		// expected process name and command line switches to exclude a process
+		// command line switches are separated with \x00 in the cmdline file
+		emacsProcessName := "emacs"
+		excludedSwitches := []string{"\x00-q", "\x00--no-init-file", "\x00-Q", "\x00--quick"}
+
+		// read cmdline file
+		cmdline, err := ioutil.ReadFile("/proc/" + pid + "/cmdline")
+		if err != nil {
+			// pid is probably not the directory of a pid
 			continue
 		}
+		cmdString := string(cmdline)
 
-		// read process name from comm file
-		emacsProcessName := "emacs"
-		commBuffer := make([]byte, len(emacsProcessName))
-		commFile.Read(commBuffer)
+		// check presence of excluded switches
+		excludedSwitchPresent := false
+		for _, excludedSwitch := range excludedSwitches {
+			if strings.Contains(cmdString, excludedSwitch) {
+				excludedSwitchPresent = true
+				break
+			}
+		}
 
-		// check name
-		if string(commBuffer) == emacsProcessName {
-			return true
+		// check process name and command line switches
+		if strings.HasPrefix(cmdString, emacsProcessName) && !excludedSwitchPresent {
+			return pid, errors.New("Blocking Emacs instance found")
 		}
 	}
 
-	return false
+	return "", nil
 }

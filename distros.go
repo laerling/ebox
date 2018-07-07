@@ -9,9 +9,12 @@ import (
 
 func setDistro(homeDirName, distroName string, removeOldSymlink bool) {
 
-	// check that no Emacs instance is running
-	if emacsInstanceRunning() {
-		fmt.Fprintln(os.Stderr, "Emacs already running. Please terminate it and try again.")
+	// check that no Emacs instance is using the current distro
+	blockingPid, err := checkNoEmacsBlocking()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "An Emacs instance with the PID "+
+			blockingPid+" is using the active distribution.")
+		fmt.Fprintln(os.Stderr, "Please terminate it and try again.")
 		os.Exit(1)
 	}
 
