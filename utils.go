@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"strings"
 )
 
@@ -22,4 +23,24 @@ func (s sortableStringSlice) Swap(i, j int) {
 	tmp := s[i]
 	s[i] = s[j]
 	s[j] = tmp
+}
+
+// getGithubUser returns the Github usernames for some of the most common Emacs
+// distributions.
+func getGithubUser(distroName string) (string, error) {
+
+	switch distroName {
+	case "spacemacs":
+		return "syl20bnr", nil
+	case "prelude":
+		return "bbatsov", nil
+	case "doom-emacs":
+		return "hlissner", nil
+		/*
+			case "emacs-live":
+				return "overtone", nil
+		*/
+	}
+
+	return "", errors.New("Could not find userName for " + distroName)
 }
