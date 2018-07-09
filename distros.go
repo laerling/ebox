@@ -38,7 +38,7 @@ func listDistros(distroDirName string) {
 	distroDir, err := os.Open(distroDirName)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Cannot open directory "+distroDirName)
-		fmt.Fprintln(os.Stderr, "Please make sure that it exists.")
+		fmt.Fprintln(os.Stderr, "Please make sure that it exists and the permissions are set correctly.")
 		os.Exit(1)
 	}
 
