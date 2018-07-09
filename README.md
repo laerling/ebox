@@ -1,6 +1,10 @@
 # Ebox
-Manage Emacs distributions.
+*Manage all your Emacs distributions with ease.*
 
-I used this as a bash-script before, installed by my [config](https://github.com/hkgit03/config), then realized [someone had already written something like this before](https://www.emacswiki.org/emacs/emacs-distribution), but wrote it anew anyway in order to have it as a standalone binary which does not depend on a shell, let alone because it's supposed to run on MS Windows too.
 
-My earlier script version of this was called *eswitch*, but since this program is intended to be a complete Emacs sandbox later (i. e. multiple emacs instances running different distributions in parallel, without interference), I renamed it to Ebox. Also, `ebox` is easier to type on a command line.
+Ebox is [emacs-distribution](https://www.emacswiki.org/emacs/emacs-distribution) on steroids. It is a single binary, independent of operating system and shell, and offers a complete Emacs sandbox.
+All your Emacs distributions live in `~/emacs` and can be executed independently from one another. So you can e. g. use [spacemacs](https://github.com/syl20bnr/spacemacs) alongside [prelude](https://github.com/bbatsov/prelude), or [Emacs live](https://github.com/overtone/emacs-live) alongside a custom configuration, without them interfering with each other.
+
+## Building
+
+Run `make`. Ebox is installed as `$GOPATH/bin/ebox`.
