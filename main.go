@@ -1,37 +1,20 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"os/user"
 )
 
-const distroPrefix = ".emacs.d-"
-
 func main() {
 
-	// get ~/.emacs.d
+	// get distribution directory name
 	usr, _ := user.Current()
-	homeDirName := usr.HomeDir
-	emacsLinkName := homeDirName + "/.emacs.d"
+	distroDirName := usr.HomeDir + "/emacs"
 
-	// check existence of ~/.emacs.d
-	// Just because Readlink succeeds doesn't mean that the links' destination exists!
-	emacsDir, readLinkErr := os.Readlink(emacsLinkName)
-	// But it does mean that the link itself exists.
-	emacsLinkExists := readLinkErr == nil
-
-	// exit if non-empty argument supplied and ~/.emacs.d exists, but is not a symlink
-	// non-empty argument means that we'll switch to the distribution with that argument as name
-	if len(os.Args) > 1 && len(os.Args[1]) > 0 && emacsLinkExists && readLinkErr != nil {
-		fmt.Fprintln(os.Stderr, emacsLinkName, "is not a symbolic link. Aborting")
-		os.Exit(1)
-	}
-
-	// if argument supplied, set distribution, else list existing distributions
+	// if argument supplied, start distribution, else list existing distributions
 	if len(os.Args) > 1 {
-		setDistro(homeDirName, os.Args[1], emacsLinkExists)
+		startDistro(distroDirName, os.Args[1])
 	} else {
-		listDistros(homeDirName, emacsDir)
+		listDistros(distroDirName)
 	}
 }
