@@ -2,5 +2,5 @@
 
 package main
 
-const WINDOWS = true
+const WINDOWS = false
 const PATHSEP = "/"
