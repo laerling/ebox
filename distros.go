@@ -10,14 +10,20 @@ import (
 func startDistro(distroDirName, distroName string) {
 
 	// check that the distro exists
-	if _, err := os.Stat(distroDirName + "/" + distroName); os.IsNotExist(err) {
+	if _, err := os.Stat(distroDirName + PATHSEP + distroName); os.IsNotExist(err) {
 		fmt.Fprintln(os.Stderr, "No such distro: '"+distroName+"'")
 		os.Exit(1)
 	}
 
 	// set this distro as $HOME
-	cmd := exec.Command("emacs")
-	cmd.Env = append(os.Environ(), "HOME="+distroDirName+"/"+distroName)
+	executable := "emacs"
+	if WINDOWS {
+		executable += ".exe"
+	}
+
+	// make emacs command
+	cmd := exec.Command(executable)
+	cmd.Env = append(os.Environ(), "HOME="+distroDirName+PATHSEP+distroName)
 
 	// launch Emacs asynchronously
 	err := cmd.Start()
@@ -31,7 +37,9 @@ func listDistros(distroDirName string) {
 	// open distro directory
 	distroDir, err := os.Open(distroDirName)
 	if err != nil {
-		panic(err)
+		fmt.Fprintln(os.Stderr, "Cannot open directory "+distroDirName)
+		fmt.Fprintln(os.Stderr, "Please make sure that it exists.")
+		os.Exit(1)
 	}
 
 	// get distros from distro directory
