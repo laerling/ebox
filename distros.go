@@ -18,10 +18,11 @@ func downloadOrStartDistro(distroDirName, distroName string) {
 			os.Exit(1)
 		}
 
-		// don't start the distro because the user might want to do some
-		// configuration first and it's not much overhead to type ebox <distro>
-		// again or just press <C-p> on a readline-enabled prompt :P
-
+		// return right away instead of starting the distro because the
+		// user might want to do some configuration first (e. g. putting
+		// proxy variables into init.el) and it's not much overhead to
+		// type ebox <distro> again or just press <C-p> on a
+		// readline-enabled prompt :P
 		return
 	}
 
@@ -102,11 +103,12 @@ func downloadDistro(distroDirName, distroName string) error {
 
 	// make sure the destination directory exists
 	destinationDir := distroDirName + PATHSEP + distroNameBase
-	err := os.Mkdir(destinationDir, 0755)
-	if err != nil {
-		// TODO don't fail if dir already exists
-		fmt.Fprintln(os.Stderr, "Cannot mkdir "+destinationDir)
-		os.Exit(1)
+	if _, err := os.Stat(distroDirName); os.IsNotExist(err) {
+		err := os.Mkdir(destinationDir, 0755)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "Cannot mkdir "+destinationDir)
+			os.Exit(1)
+		}
 	}
 
 	// run git
