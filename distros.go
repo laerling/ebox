@@ -27,17 +27,17 @@ func downloadOrStartDistro(distroDirName, distroName string) {
 	}
 
 	// set this distro as $HOME
-	emacsExecutable := "emacs"
+	emacsExe := "emacs"
 	if WINDOWS {
-		emacsExecutable += ".exe"
+		emacsExe += ".exe"
 	}
 
 	// make emacs command
-	cmd := exec.Command(emacsExecutable)
-	cmd.Env = append(os.Environ(), "HOME="+distroDirName+PATHSEP+distroName)
+	emacsCmd := exec.Command(emacsExe)
+	emacsCmd.Env = append(os.Environ(), "HOME="+distroDirName+PATHSEP+distroName)
 
 	// launch Emacs asynchronously
-	err := cmd.Start()
+	err := emacsCmd.Start()
 	if err != nil {
 		panic(err)
 	}
@@ -69,40 +69,44 @@ func listDistros(distroDirName string) {
 	}
 }
 
-func downloadDistro(distroDirName, distroName string) error {
+func downloadDistro(distroDirName, distroUrl string) error {
 
-	// if distroName does not contain slash, get Github username
-	slashIndex := strings.Index(distroName, "/")
+	// at this point distroUrl can have the form foo, foo/bar, or domain.tld/foo/bar
+	// if distroUrl does not contain slash, get Github username
+	// the exact position of the slash is needed later
+	slashIndex := strings.Index(distroUrl, "/")
 	if slashIndex < 0 {
-		userName, err := getGithubUser(distroName)
+		userName, err := getGithubUser(distroUrl)
 		if err != nil {
 			return err
 		}
-		distroName = userName + "/" + distroName
+		distroUrl = userName + "/" + distroUrl
 	}
 
-	// distroName is guaranteed to have the form (domain.tld/)?foo/bar now
-
-	// if distroName does not contain dot before slash, assume github
-	dotIndex := strings.Index(distroName, ".")
+	// at this point distroUrl can have the form foo/bar, or domain.tld/foo/bar
+	// if distroUrl does not contain dot before slash, assume github
+	dotIndex := strings.Index(distroUrl, ".")
 	if dotIndex < 0 || dotIndex > slashIndex {
-		distroName = "github.com/" + distroName
+		distroUrl = "github.com/" + distroUrl
 	}
 
-	// distroName is guaranteed to have the form domain.tld/foo/bar now
+	// at this point distroUrl has the form domain.tld/foo/bar
+	// extract name of distro
+	distroName := distroUrl[strings.LastIndex(distroUrl, "/")+1:]
 
-	// generate URL to clone and name of distro
-	distroName = "https://" + distroName
-	distroNameBase := distroName[strings.LastIndex(distroName, "/")+1:]
+	// assume https
+	if !strings.Contains(distroUrl, "://") {
+		distroUrl = "https://" + distroUrl
+	}
 
 	// generate git command
-	gitExecutable := "git"
+	gitExe := "git"
 	if WINDOWS {
-		gitExecutable += ".exe"
+		gitExe += ".exe"
 	}
 
 	// make sure the destination directory exists
-	destinationDir := distroDirName + PATHSEP + distroNameBase
+	destinationDir := distroDirName + PATHSEP + distroName
 	if _, err := os.Stat(distroDirName); os.IsNotExist(err) {
 		err := os.Mkdir(destinationDir, 0755)
 		if err != nil {
@@ -111,11 +115,16 @@ func downloadDistro(distroDirName, distroName string) error {
 		}
 	}
 
-	// run git
+	// make git command
 	destinationEmacsDir := destinationDir + PATHSEP + ".emacs.d"
-	fmt.Println("Running " + gitExecutable + " clone " + distroName + " " + destinationEmacsDir)
-	cmd := exec.Command(gitExecutable, "clone", distroName, destinationEmacsDir)
-	err = cmd.Run()
+	gitCmd := exec.Command(gitExe, "clone", distroUrl, destinationEmacsDir)
+
+	// show git running
+	gitCmd.Stdout = os.Stdout
+	gitCmd.Stderr = os.Stderr
+
+	// run git
+	err := gitCmd.Run()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Git error: "+err.Error())
 		return err

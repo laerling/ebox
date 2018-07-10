@@ -30,16 +30,16 @@ func (s sortableStringSlice) Swap(i, j int) {
 func getGithubUser(distroName string) (string, error) {
 
 	switch distroName {
-	case "spacemacs":
-		return "syl20bnr", nil
-	case "prelude":
-		return "bbatsov", nil
 	case "doom-emacs":
 		return "hlissner", nil
-		/*
-			case "emacs-live":
-				return "overtone", nil
-		*/
+	case "emacs-live":
+		return "overtone", nil
+	case "prelude":
+		return "bbatsov", nil
+	case "spacemacs":
+		return "syl20bnr", nil
+	case "ohai-emacs":
+		return "bodil", nil
 	}
 
 	return "", errors.New("Could not find userName for " + distroName)
