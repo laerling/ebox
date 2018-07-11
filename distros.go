@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -12,17 +13,18 @@ func downloadOrStartDistro(distroDirName, distroName string) {
 
 	// download distro if it does not exist
 	if _, err := os.Stat(distroDirName + PATHSEP + distroName); os.IsNotExist(err) {
-		if err := downloadDistro(distroDirName, distroName); err != nil {
-			fmt.Fprintln(os.Stderr, "No such distro: '"+distroName+"' "+
-				"and no downloadable distro found in list.")
+		if err = downloadDistro(distroDirName, distroName); err != nil {
+			fmt.Fprintln(os.Stderr, "Error downloading distro '"+distroName+"':")
+			fmt.Fprintln(os.Stderr, err.Error())
 			os.Exit(1)
 		}
 
-		// return right away instead of starting the distro because the
-		// user might want to do some configuration first (e. g. putting
-		// proxy variables into init.el) and it's not much overhead to
-		// type ebox <distro> again or just press <C-p> on a
-		// readline-enabled prompt :P
+		// if download was successful return right away
+		// instead of starting the distro because the user
+		// might want to do some configuration first
+		// (e. g. putting proxy variables into init.el) and
+		// it's not much overhead to type ebox <distro> again
+		// or just press <C-p> on a readline-enabled prompt :P
 		return
 	}
 
@@ -69,30 +71,12 @@ func listDistros(distroDirName string) {
 	}
 }
 
-func downloadDistro(distroDirName, distroUrl string) error {
+func downloadDistro(distroDirName, distroUrlOrName string) error {
 
-	// at this point distroUrl can have the form foo, foo/bar, or domain.tld/foo/bar
-	// if distroUrl does not contain slash, get Github username
-	// the exact position of the slash is needed later
-	slashIndex := strings.Index(distroUrl, "/")
-	if slashIndex < 0 {
-		userName, err := getGithubUser(distroUrl)
-		if err != nil {
-			return err
-		}
-		distroUrl = userName + "/" + distroUrl
+	distroUrl, distroName, err := makeRepoUrl(distroUrlOrName)
+	if err != nil {
+		return err
 	}
-
-	// at this point distroUrl can have the form foo/bar, or domain.tld/foo/bar
-	// if distroUrl does not contain dot before slash, assume github
-	dotIndex := strings.Index(distroUrl, ".")
-	if dotIndex < 0 || dotIndex > slashIndex {
-		distroUrl = "github.com/" + distroUrl
-	}
-
-	// at this point distroUrl has the form domain.tld/foo/bar
-	// extract name of distro
-	distroName := distroUrl[strings.LastIndex(distroUrl, "/")+1:]
 
 	// assume https
 	if !strings.Contains(distroUrl, "://") {
@@ -110,8 +94,7 @@ func downloadDistro(distroDirName, distroUrl string) error {
 	if _, err := os.Stat(distroDirName); os.IsNotExist(err) {
 		err := os.Mkdir(destinationDir, 0755)
 		if err != nil {
-			fmt.Fprintln(os.Stderr, "Cannot mkdir "+destinationDir)
-			os.Exit(1)
+			return errors.New("Cannot mkdir " + destinationDir)
 		}
 	}
 
@@ -124,10 +107,9 @@ func downloadDistro(distroDirName, distroUrl string) error {
 	gitCmd.Stderr = os.Stderr
 
 	// run git
-	err := gitCmd.Run()
+	err = gitCmd.Run()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Git error: "+err.Error())
-		return err
+		return errors.New("Git error: " + err.Error())
 	}
 
 	return nil

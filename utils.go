@@ -42,5 +42,43 @@ func getGithubUser(distroName string) (string, error) {
 		return "bodil", nil
 	}
 
-	return "", errors.New("Could not find userName for " + distroName)
+	return "", errors.New("Could not find Github userName for repository '" + distroName + "'")
+}
+
+// makeRepoUrl takes a repository name or github name with repository
+// name or URL and returns the fully qualified URL to use with git
+// clone, as well as the name of the repository. For example:
+// makeRepoUrl("prelude") == ("https://github.com/bbatnov/prelude", "prelude", nil)
+// makeRepoUrl("bbatsov/prelude") == ("https://github.com/bbatsov/prelude", "RepoName", nil)
+// makeRepoUrl("domain.tld/foo.git") == ("https://domain.tld/foo.git", "foo", nil)
+func makeRepoUrl(distroUrlOrRepoName string) (string, string, error) {
+	distroUrl := distroUrlOrRepoName
+
+	// if distroUrl does not contain slash, get Github username
+	// the exact position of the slash is needed later
+	slashIndex := strings.Index(distroUrl, "/")
+	if slashIndex < 0 {
+		userName, err := getGithubUser(distroUrl)
+		if err != nil {
+			return "", "", err
+		}
+		distroUrl = userName + "/" + distroUrl
+	}
+
+	// at this point distroUrl can have the form foo/bar, or domain.tld/foo/bar
+	// if distroUrl does not contain dot before slash, assume Github
+	dotIndex := strings.Index(distroUrl, ".")
+	if dotIndex < 0 || dotIndex > slashIndex {
+		distroUrl = "github.com/" + distroUrl
+	}
+
+	// at this point distroUrl has the form domain.tld/foo/bar
+	// extract name of distro
+	distroName := distroUrl[strings.LastIndex(distroUrl, "/")+1:]
+	if strings.HasSuffix(distroName, ".git") {
+		distroName = distroName[len(distroName)-4 : len(distroName)]
+	}
+
+	// TODO: Remove trailing ".git" from distroName
+	return distroUrl, distroName, nil
 }
