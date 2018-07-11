@@ -76,9 +76,8 @@ func makeRepoUrl(distroUrlOrRepoName string) (string, string, error) {
 	// extract name of distro
 	distroName := distroUrl[strings.LastIndex(distroUrl, "/")+1:]
 	if strings.HasSuffix(distroName, ".git") {
-		distroName = distroName[len(distroName)-4 : len(distroName)]
+		distroName = distroName[:len(distroName)-4]
 	}
 
-	// TODO: Remove trailing ".git" from distroName
 	return distroUrl, distroName, nil
 }

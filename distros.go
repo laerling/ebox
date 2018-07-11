@@ -89,14 +89,8 @@ func downloadDistro(distroDirName, distroUrlOrName string) error {
 		gitExe += ".exe"
 	}
 
-	// make sure the destination directory exists
+	// the directory to clone the distro into
 	destinationDir := distroDirName + PATHSEP + distroName
-	if _, err := os.Stat(distroDirName); os.IsNotExist(err) {
-		err := os.Mkdir(destinationDir, 0755)
-		if err != nil {
-			return errors.New("Cannot mkdir " + destinationDir)
-		}
-	}
 
 	// make git command
 	destinationEmacsDir := destinationDir + PATHSEP + ".emacs.d"
