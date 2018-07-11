@@ -5,28 +5,39 @@ import (
 	"os"
 	"os/exec"
 	"sort"
+	"strings"
 )
 
-func startDistro(distroDirName, distroName string) {
+func downloadOrStartDistro(distroDirName, distroName string) {
 
-	// check that the distro exists
+	// download distro if it does not exist
 	if _, err := os.Stat(distroDirName + PATHSEP + distroName); os.IsNotExist(err) {
-		fmt.Fprintln(os.Stderr, "No such distro: '"+distroName+"'")
-		os.Exit(1)
+		if err := downloadDistro(distroDirName, distroName); err != nil {
+			fmt.Fprintln(os.Stderr, "No such distro: '"+distroName+"' "+
+				"and no downloadable distro found in list.")
+			os.Exit(1)
+		}
+
+		// return right away instead of starting the distro because the
+		// user might want to do some configuration first (e. g. putting
+		// proxy variables into init.el) and it's not much overhead to
+		// type ebox <distro> again or just press <C-p> on a
+		// readline-enabled prompt :P
+		return
 	}
 
 	// set this distro as $HOME
-	executable := "emacs"
+	emacsExe := "emacs"
 	if WINDOWS {
-		executable += ".exe"
+		emacsExe += ".exe"
 	}
 
 	// make emacs command
-	cmd := exec.Command(executable)
-	cmd.Env = append(os.Environ(), "HOME="+distroDirName+PATHSEP+distroName)
+	emacsCmd := exec.Command(emacsExe)
+	emacsCmd.Env = append(os.Environ(), "HOME="+distroDirName+PATHSEP+distroName)
 
 	// launch Emacs asynchronously
-	err := cmd.Start()
+	err := emacsCmd.Start()
 	if err != nil {
 		panic(err)
 	}
@@ -56,4 +67,68 @@ func listDistros(distroDirName string) {
 	for _, distro := range distros {
 		fmt.Println(distro)
 	}
+}
+
+func downloadDistro(distroDirName, distroUrl string) error {
+
+	// at this point distroUrl can have the form foo, foo/bar, or domain.tld/foo/bar
+	// if distroUrl does not contain slash, get Github username
+	// the exact position of the slash is needed later
+	slashIndex := strings.Index(distroUrl, "/")
+	if slashIndex < 0 {
+		userName, err := getGithubUser(distroUrl)
+		if err != nil {
+			return err
+		}
+		distroUrl = userName + "/" + distroUrl
+	}
+
+	// at this point distroUrl can have the form foo/bar, or domain.tld/foo/bar
+	// if distroUrl does not contain dot before slash, assume github
+	dotIndex := strings.Index(distroUrl, ".")
+	if dotIndex < 0 || dotIndex > slashIndex {
+		distroUrl = "github.com/" + distroUrl
+	}
+
+	// at this point distroUrl has the form domain.tld/foo/bar
+	// extract name of distro
+	distroName := distroUrl[strings.LastIndex(distroUrl, "/")+1:]
+
+	// assume https
+	if !strings.Contains(distroUrl, "://") {
+		distroUrl = "https://" + distroUrl
+	}
+
+	// generate git command
+	gitExe := "git"
+	if WINDOWS {
+		gitExe += ".exe"
+	}
+
+	// make sure the destination directory exists
+	destinationDir := distroDirName + PATHSEP + distroName
+	if _, err := os.Stat(distroDirName); os.IsNotExist(err) {
+		err := os.Mkdir(destinationDir, 0755)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "Cannot mkdir "+destinationDir)
+			os.Exit(1)
+		}
+	}
+
+	// make git command
+	destinationEmacsDir := destinationDir + PATHSEP + ".emacs.d"
+	gitCmd := exec.Command(gitExe, "clone", distroUrl, destinationEmacsDir)
+
+	// show git running
+	gitCmd.Stdout = os.Stdout
+	gitCmd.Stderr = os.Stderr
+
+	// run git
+	err := gitCmd.Run()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Git error: "+err.Error())
+		return err
+	}
+
+	return nil
 }
