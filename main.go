@@ -9,7 +9,10 @@ import (
 func main() {
 
 	// get distro directory name
-	usr, _ := user.Current()
+	usr, err := user.Current()
+	if err != nil {
+		panic(err)
+	}
 	distroDirName := usr.HomeDir + PATHSEP + "emacs"
 
 	// if distro directory does not exist, create it

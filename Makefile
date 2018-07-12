@@ -1,19 +1,33 @@
-.PHONY: gopath install run clean uninstall purge
+.PHONY: goimports gopath install run clean uninstall purge test
 
 EXE=ebox
 ARGS=
 
-$(EXE): $(wildcard *.go)
-	goimports -w $+
-	go build -o "$(EXE)"
+
+# building and installing stuff
+
+$(GOPATH)/bin/$(EXE): $(EXE)
 	go install
 
-run: $(EXE)
-	$(EXE) $(ARGS)
+$(EXE): goimports $(wildcard *.go)
+	go build -o "$(EXE)"
 
 install: "/bin/$(EXE)"
+
 "/bin/$(EXE)":
 	sudo -E install -m 0755 "$(GOPATH)/bin/$(EXE)" $@
+
+
+# running stuff
+
+run: $(GOPATH)/bin/$(EXE)
+	$(GOPATH)/bin/$(EXE) $(ARGS)
+
+test: goimports
+	go test
+
+
+# removing stuff
 
 clean:
 	rm -f "$(EXE)"
@@ -25,5 +39,14 @@ uninstall:
 
 purge: uninstall clean
 
+
+# depending on stuff
+
 gopath:
 	if [ -z "$(GOPATH)" ]; then exit 1; fi
+
+
+# other stuff
+
+goimports: $(wildcard *.go)
+	goimports -w $+
