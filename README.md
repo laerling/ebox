@@ -8,6 +8,7 @@ All your Emacs distributions live in `~/emacs` and can be executed independently
 ## Building
 
 Run `make`. Ebox is installed as `$GOPATH/bin/ebox`.
+To run the tests, run `make test`. This installs Ebox and then runs the tests.
 
 ## Usage
 

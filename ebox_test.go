@@ -29,8 +29,8 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic("Error getting current user: " + err.Error())
 	}
-	distroDir = usr.HomeDir + "/emacs/" + distroName
-	distroDirN = usr.HomeDir + "/emacs/" + distroNameN
+	distroDir = usr.HomeDir + PATHSEP + "emacs" + PATHSEP + distroName
+	distroDirN = usr.HomeDir + PATHSEP + "emacs" + PATHSEP + distroNameN
 
 	os.Exit(m.Run())
 }
