@@ -9,11 +9,37 @@ import (
 	"strings"
 )
 
+func listDistros(distroDirName string) {
+
+	// open distro directory
+	distroDir, err := os.Open(distroDirName)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Cannot open directory "+distroDirName)
+		fmt.Fprintln(os.Stderr, "Please make sure that it exists and the permissions are set correctly.")
+		os.Exit(1)
+	}
+
+	// get distros from distro directory
+	var distros sortableStringSlice
+	distros, err = distroDir.Readdirnames(0)
+	if err != nil {
+		panic(err)
+	}
+
+	// sort filenames alphabetically (case-insensitively)
+	sort.Sort(distros)
+
+	// list distros
+	for _, distro := range distros {
+		fmt.Println(distro)
+	}
+}
+
 func downloadOrStartDistro(distroDirName, distroName string) {
 
 	// download distro if it does not exist
-	if _, err := os.Stat(distroDirName + PATHSEP + distroName); os.IsNotExist(err) {
-		if err = downloadDistro(distroDirName, distroName); err != nil {
+	if !directoryExists(distroDirName + PATHSEP + distroName) {
+		if err := downloadDistro(distroDirName, distroName); err != nil {
 			fmt.Fprintln(os.Stderr, "Error downloading distro '"+distroName+"':")
 			fmt.Fprintln(os.Stderr, err.Error())
 			os.Exit(1)
@@ -42,32 +68,6 @@ func downloadOrStartDistro(distroDirName, distroName string) {
 	err := emacsCmd.Start()
 	if err != nil {
 		panic(err)
-	}
-}
-
-func listDistros(distroDirName string) {
-
-	// open distro directory
-	distroDir, err := os.Open(distroDirName)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "Cannot open directory "+distroDirName)
-		fmt.Fprintln(os.Stderr, "Please make sure that it exists and the permissions are set correctly.")
-		os.Exit(1)
-	}
-
-	// get distros from distro directory
-	var distros sortableStringSlice
-	distros, err = distroDir.Readdirnames(0)
-	if err != nil {
-		panic(err)
-	}
-
-	// sort filenames alphabetically (case-insensitively)
-	sort.Sort(distros)
-
-	// list distros
-	for _, distro := range distros {
-		fmt.Println(distro)
 	}
 }
 

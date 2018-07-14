@@ -16,8 +16,8 @@ const programName string = "ebox"
 
 const distroName string = "ohai-emacs"
 const distroNameN string = "nonexistent"
-const githubUser string = "bodil"
-const githubUserN string = "nonexistent"
+const remoteUser string = "bodil"
+const remoteUserN string = "nonexistent"
 
 var distroDir string
 var distroDirN string
@@ -32,7 +32,17 @@ func TestMain(m *testing.M) {
 	distroDir = usr.HomeDir + PATHSEP + "emacs" + PATHSEP + distroName
 	distroDirN = usr.HomeDir + PATHSEP + "emacs" + PATHSEP + distroNameN
 
-	os.Exit(m.Run())
+	// run tests
+	exitState := m.Run()
+
+	// clean up
+	if err := ensureDirectoryNotExists(distroDirN); err != nil {
+		fmt.Fprintln(os.Stderr, "Cannot delete directory "+distroDirN)
+		os.Exit(1)
+	}
+
+	// exit
+	os.Exit(exitState)
 }
 
 // runs main and checks if distroDir exists
@@ -40,12 +50,16 @@ func runMain(t *testing.T, expectSuccess, expectDistroDir bool, distroName, arg 
 
 	fmt.Println("Running with argument '" + arg + "'")
 
-	// make sure distro does not exist
+	// make sure distro for positive tests does not exist
 	t.Log("Making sure distribution directory does not exist: '" + distroDir + "'")
-	if _, err := os.Stat(distroDir); err == nil {
-		if err = os.RemoveAll(distroDir); err != nil {
-			t.Fatal("Cannot remove distribution " + distroName + ": " + err.Error())
-		}
+	if err := ensureDirectoryNotExists(distroDir); err != nil {
+		t.Fatal("Cannot remove distribution " + distroName + ": " + err.Error())
+	}
+
+	// make sure distro for negative tests does not exist
+	t.Log("Making sure distribution directory does not exist: '" + distroDirN + "'")
+	if err := ensureDirectoryNotExists(distroDirN); err != nil {
+		t.Fatal("Cannot remove distribution " + distroNameN + ": " + err.Error())
 	}
 
 	// set command line argument
@@ -71,32 +85,39 @@ func runMain(t *testing.T, expectSuccess, expectDistroDir bool, distroName, arg 
 	}
 }
 
-// foo
-func TestDownloadName(t *testing.T) {
-	runMain(t, true, true, distroName, distroName)
-}
+/*
+ * negative tests
+ */
 
-// foo/bar
-func TestDownloadSlash(t *testing.T) {
-	runMain(t, true, true, distroName, githubUser+"/"+distroName)
-}
-
-// domain.tld/foo
-func TestDownloadDomain(t *testing.T) {
-	runMain(t, true, true, distroName, "github.com/"+githubUser+"/"+distroName)
-}
-
-// nonexistent
+// nonexisting repo of the form 'nonexistent'
 func TestDownloadNameN(t *testing.T) {
 	runMain(t, false, false, distroNameN, distroNameN)
 }
 
-// nonexistent/nonexistent
-func TestDownloadSlashN(t *testing.T) {
-	runMain(t, false, false, distroNameN, githubUserN+"/"+distroNameN)
+// there is no test for the remote 'nonexisting/nonexisting', because git would just assume
+// the repo to be a private one on Github, thus asking for a username and password
+
+// nonexisting remote of the form 'domain.tld/foo'
+func TestDownloadDomainN(t *testing.T) {
+	runMain(t, false, false, distroNameN, "domain.tld/"+remoteUserN+"/"+distroNameN)
 }
 
-// domain.tld/nonexistent/nonexistent
-func TestDownloadDomainN(t *testing.T) {
-	runMain(t, false, false, distroNameN, "domain.tld/"+githubUserN+"/"+distroNameN)
+/*
+ * positive tests
+ * the positive tests run last, because I want to keep the distro
+ */
+
+// existing repo of the form foo
+func TestDownloadName(t *testing.T) {
+	runMain(t, true, true, distroName, distroName)
+}
+
+// existing remote of the form foo/bar
+func TestDownloadSlash(t *testing.T) {
+	runMain(t, true, true, distroName, remoteUser+"/"+distroName)
+}
+
+// existing remote of the form 'domain.tld/foo'
+func TestDownloadDomain(t *testing.T) {
+	runMain(t, true, true, distroName, "github.com/"+remoteUser+"/"+distroName)
 }

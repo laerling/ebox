@@ -23,7 +23,7 @@ install: "/bin/$(EXE)"
 run: $(GOPATH)/bin/$(EXE)
 	$(GOPATH)/bin/$(EXE) $(ARGS)
 
-test: goimports
+test: $(GOPATH)/bin/$(EXE) # depends on installed program since it's called from inside the tests via cmd.Run()
 	go test
 
 

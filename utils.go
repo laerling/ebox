@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"os"
 	"strings"
 )
 
@@ -80,4 +81,33 @@ func makeRepoUrl(distroUrlOrRepoName string) (string, string, error) {
 	}
 
 	return distroUrl, distroName, nil
+}
+
+func directoryExists(dirName string) bool {
+	_, err := os.Stat(dirName)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false
+		}
+		panic(err)
+	}
+	return true
+}
+
+func ensureDirectoryExists(dirName string) error {
+	if !directoryExists(dirName) {
+		if err := os.Mkdir(dirName, 0755); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func ensureDirectoryNotExists(dirName string) error {
+	if directoryExists(dirName) {
+		if err := os.RemoveAll(dirName); err != nil {
+			return err
+		}
+	}
+	return nil
 }
