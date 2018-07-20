@@ -13,7 +13,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	distroDirName := usr.HomeDir + PATHSEP + "emacs"
+	homeDir := usr.HomeDir
+	distroDirName := homeDir + PATHSEP + "emacs"
 
 	// if distro directory does not exist, create it
 	if err := ensureDirectoryExists(distroDirName); err != nil {
@@ -23,7 +24,7 @@ func main() {
 
 	// if argument supplied, start distribution, else list existing distributions
 	if len(os.Args) > 1 {
-		downloadOrStartDistro(distroDirName, os.Args[1])
+		downloadOrStartDistro(homeDir, distroDirName, os.Args[1])
 	} else {
 		listDistros(distroDirName)
 	}

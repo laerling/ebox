@@ -35,17 +35,31 @@ func listDistros(distroDirName string) {
 	}
 }
 
-func downloadOrStartDistro(distroDirName, distroName string) {
+func downloadOrStartDistro(homeDir, distroDirName, distroName string) {
 
 	// download distro if it does not exist
-	if !directoryExists(distroDirName + PATHSEP + distroName) {
+	distroDir := distroDirName + PATHSEP + distroName
+	if !directoryExists(distroDir) {
 		if err := downloadDistro(distroDirName, distroName); err != nil {
-			fmt.Fprintln(os.Stderr, "Error downloading distro '"+distroName+"':")
-			fmt.Fprintln(os.Stderr, err.Error())
-			os.Exit(1)
+
+			// distro not found. Ask user whether to create a new distro
+			fmt.Print("Distribution " + distroName + " does not exist. Create it now? (y/N) ")
+			var input [1]byte
+			_, err = os.Stdin.Read(input[:])
+			if err != nil {
+				fmt.Fprintln(os.Stderr, "Error reading answer")
+				os.Exit(1)
+			}
+
+			// check answer
+			if input[0] == 'y' || input[0] == 'Y' {
+				makeNewDistro(homeDir, distroDir, distroName)
+			}
+
+			os.Exit(0)
 		}
 
-		// if download was successful return right away
+		// if download was successful, return right away
 		// instead of starting the distro because the user
 		// might want to do some configuration first
 		// (e. g. putting proxy variables into init.el) and
@@ -107,4 +121,32 @@ func downloadDistro(distroDirName, distroUrlOrName string) error {
 	}
 
 	return nil
+}
+
+// makeNewDistro makes the directory for a new distro and fills it with the most
+// basic stuff (needed symlinks, environment variable settings for Emacs, ...)
+func makeNewDistro(homeDir, distroDir, distroName string) {
+	if err := ensureDirectoryExists(distroDir); err != nil {
+		fmt.Fprintln(os.Stderr, "Cannot mkdir "+distroName)
+		os.Exit(1)
+	}
+
+	// symlinks to create
+	symlinks := []string{
+		".cache",
+		".cargo",
+		".config",
+	}
+
+	// create symlinks
+	for _, linkName := range symlinks {
+		from := homeDir + PATHSEP + linkName
+		to := distroDir + PATHSEP + linkName
+		err = os.Symlink(from, to)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "Warning! Cannot symlink "+from+" to "+to)
+		}
+	}
+
+	// TODO: Write HTTP(S)_PROXY (if defined) variables to init.el
 }
