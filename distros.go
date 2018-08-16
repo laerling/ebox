@@ -68,18 +68,23 @@ func downloadOrStartDistro(homeDir, distroDirName, distroName string) {
 		return
 	}
 
-	// set this distro as $HOME
+	// make emacs command
 	emacsExe := "emacs"
 	if WINDOWS {
 		emacsExe += ".exe"
 	}
 
-	// make emacs command
+	// set distro as $HOME
+	originalDistroDir, err := os.Readlink(distroDir)
+	// if readlink fails, assume distroDir is the original dir and continue
+	if err != nil {
+		originalDistroDir = distroDir
+	}
 	emacsCmd := exec.Command(emacsExe)
-	emacsCmd.Env = append(os.Environ(), "HOME="+distroDirName+PATHSEP+distroName)
+	emacsCmd.Env = append(os.Environ(), "HOME="+originalDistroDir)
 
 	// launch Emacs asynchronously
-	err := emacsCmd.Start()
+	err = emacsCmd.Start()
 	if err != nil {
 		panic(err)
 	}
@@ -142,7 +147,7 @@ func makeNewDistro(homeDir, distroDir, distroName string) {
 	for _, linkName := range symlinks {
 		from := homeDir + PATHSEP + linkName
 		to := distroDir + PATHSEP + linkName
-		err = os.Symlink(from, to)
+		err := os.Symlink(from, to)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "Warning! Cannot symlink "+from+" to "+to)
 		}
