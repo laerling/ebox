@@ -30,8 +30,11 @@ func listDistros(distroDirName string) {
 	sort.Sort(distros)
 
 	// list distros
-	for _, distro := range distros {
-		fmt.Println(distro)
+	for _, distroName := range distros {
+		// check that it's really a distro
+		if directoryExists(distroDirName + PATHSEP + distroName) {
+			fmt.Println(distroName)
+		}
 	}
 }
 

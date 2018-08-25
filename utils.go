@@ -84,12 +84,17 @@ func makeRepoUrl(distroUrlOrRepoName string) (string, string, error) {
 }
 
 func directoryExists(dirName string) bool {
-	_, err := os.Stat(dirName)
+	dir, err := os.Stat(dirName)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return false
 		}
+		// fail only if stat failed but file is present
 		panic(err)
+	}
+	// check that it's really a directory, or a symlink pointing to a directory
+	if !dir.IsDir() {
+		return false
 	}
 	return true
 }
