@@ -24,6 +24,7 @@ Running Ebox with the name of an existing distribution spawns an instance of tha
 $ ebox spacemacs
 ```
 In this example the environment variable `HOME` is set to `~/emacs/spacemacs` inside that Emacs instance.
+Here, `~/emacs/spacemacs` can either be a directory or a symlink to a directory elsewhere in the filesystem (or to a symlink again, and so on).
 
 Ebox can also download distributions. For some well-known distributions you don't even have to specify a URL:
 ```
