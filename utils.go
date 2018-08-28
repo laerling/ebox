@@ -92,7 +92,7 @@ func directoryExists(dirName string) bool {
 		// fail only if stat failed but file is present
 		panic(err)
 	}
-	// check that it's really a directory, or a symlink pointing to a directory
+	// check that it's really a directory, or a symlink pointing to a directory (or to a symlink pointing to... you get the idea)
 	if !dir.IsDir() {
 		return false
 	}

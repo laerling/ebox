@@ -31,8 +31,8 @@ func listDistros(distroDirName string) {
 
 	// list distros
 	for _, distroName := range distros {
-		// check that it's really a distro
-		if directoryExists(distroDirName + PATHSEP + distroName) {
+		// check that it's really a distro and doesn't start with a dot
+		if directoryExists(distroDirName+PATHSEP+distroName) && !strings.HasPrefix(distroName, ".") {
 			fmt.Println(distroName)
 		}
 	}
