@@ -144,6 +144,7 @@ func makeNewDistro(homeDir, distroDir, distroName string) {
 		".cache",
 		".cargo",
 		".config",
+		".gnupg",
 	}
 
 	// create symlinks
