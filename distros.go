@@ -71,17 +71,20 @@ func downloadOrStartDistro(homeDir, distroDirName, distroName string) {
 		return
 	}
 
-	// make emacs command
-	emacsExe := "emacs"
-	if WINDOWS {
-		emacsExe += ".exe"
-	}
-
 	// set distro as $HOME
 	originalDistroDir, err := os.Readlink(distroDir)
 	// if readlink fails, assume distroDir is the original dir and continue
 	if err != nil {
 		originalDistroDir = distroDir
+	}
+
+	// check symlinks are present in distro
+	ensureSymlinksPresent(homeDir, distroDir)
+
+	// make Emacs command
+	emacsExe := "emacs"
+	if WINDOWS {
+		emacsExe += ".exe"
 	}
 	emacsCmd := exec.Command(emacsExe)
 	emacsCmd.Env = append(os.Environ(), "HOME="+originalDistroDir)
@@ -134,10 +137,14 @@ func downloadDistro(distroDirName, distroUrlOrName string) error {
 // makeNewDistro makes the directory for a new distro and fills it with the most
 // basic stuff (needed symlinks, environment variable settings for Emacs, ...)
 func makeNewDistro(homeDir, distroDir, distroName string) {
+
 	if err := ensureDirectoryExists(distroDir); err != nil {
 		fmt.Fprintln(os.Stderr, "Cannot mkdir "+distroName)
 		os.Exit(1)
 	}
+}
+
+func ensureSymlinksPresent(homeDir, distroDir string) {
 
 	// symlinks to create
 	symlinks := []string{
@@ -151,11 +158,12 @@ func makeNewDistro(homeDir, distroDir, distroName string) {
 	for _, linkName := range symlinks {
 		from := homeDir + PATHSEP + linkName
 		to := distroDir + PATHSEP + linkName
-		err := os.Symlink(from, to)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, "Warning! Cannot symlink "+from+" to "+to)
+		_, err := os.Stat(from)
+		if err == nil {
+			err = os.Symlink(from, to)
+			if err == nil {
+				fmt.Println("Created symlink " + to + " -> " + from)
+			}
 		}
 	}
-
-	// TODO: Write HTTP(S)_PROXY (if defined) variables to init.el
 }
