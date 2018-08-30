@@ -108,7 +108,7 @@ func ensureDirectoryExists(dirName string) error {
 	return nil
 }
 
-func ensureDirectoryNotExists(dirName string) error {
+func ensureDirectoryExistsNot(dirName string) error {
 	if directoryExists(dirName) {
 		if err := os.RemoveAll(dirName); err != nil {
 			return err

@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"sort"
@@ -142,6 +143,8 @@ func makeNewDistro(homeDir, distroDir, distroName string) {
 		fmt.Fprintln(os.Stderr, "Cannot mkdir "+distroName)
 		os.Exit(1)
 	}
+
+	makeInitFile(distroDir)
 }
 
 func ensureSymlinksPresent(homeDir, distroDir string) {
@@ -160,10 +163,49 @@ func ensureSymlinksPresent(homeDir, distroDir string) {
 		to := distroDir + PATHSEP + linkName
 		_, err := os.Stat(from)
 		if err == nil {
-			err = os.Symlink(from, to)
+			err := os.Symlink(from, to)
 			if err == nil {
 				fmt.Println("Created symlink " + to + " -> " + from)
 			}
+		}
+	}
+}
+
+func makeInitFile(distroDir string) {
+
+	// get environment variables
+	envHttpProxy := os.Getenv("http_proxy")
+	envHttpsProxy := os.Getenv("https_proxy")
+
+	// make string to write to init.el
+	initElString := ""
+	if envHttpProxy != "" {
+		envHttpProxySplitted := strings.Split(envHttpProxy, "://")
+		initElString += "\n     (\"" +
+			envHttpProxySplitted[0] + "\" . \"" +
+			envHttpProxySplitted[1] + "\")"
+	}
+	if envHttpsProxy != "" {
+		envHttpsProxySplitted := strings.Split(envHttpsProxy, "://")
+		initElString += "\n     (\"" +
+			envHttpsProxySplitted[0] + "\" . \"" +
+			envHttpsProxySplitted[1] + "\")"
+	}
+
+	// write to init.el
+	if initElString != "" {
+		// make .emacs.d
+		emacsDir := distroDir + PATHSEP + ".emacs.d"
+		ensureDirectoryExists(emacsDir)
+
+		// write init.el
+		stringToWrite := []byte("(set 'url-proxy-services '(" + initElString + "))\n\n")
+		initFileName := emacsDir + PATHSEP + "init.el"
+		err := ioutil.WriteFile(initFileName, stringToWrite, 0644)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "Cannot write to init.el."+
+				" This could make the distribution unusable."+
+				" Please check the init.el file manually")
 		}
 	}
 }

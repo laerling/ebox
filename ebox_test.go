@@ -36,7 +36,7 @@ func TestMain(m *testing.M) {
 	exitState := m.Run()
 
 	// clean up
-	if err := ensureDirectoryNotExists(distroDirN); err != nil {
+	if err := ensureDirectoryExistsNot(distroDirN); err != nil {
 		fmt.Fprintln(os.Stderr, "Cannot delete directory "+distroDirN)
 		os.Exit(1)
 	}
@@ -52,13 +52,13 @@ func runMain(t *testing.T, expectSuccess, expectDistroDir bool, distroName, arg 
 
 	// make sure distro for positive tests does not exist
 	t.Log("Making sure distribution directory does not exist: '" + distroDir + "'")
-	if err := ensureDirectoryNotExists(distroDir); err != nil {
+	if err := ensureDirectoryExistsNot(distroDir); err != nil {
 		t.Fatal("Cannot remove distribution " + distroName + ": " + err.Error())
 	}
 
 	// make sure distro for negative tests does not exist
 	t.Log("Making sure distribution directory does not exist: '" + distroDirN + "'")
-	if err := ensureDirectoryNotExists(distroDirN); err != nil {
+	if err := ensureDirectoryExistsNot(distroDirN); err != nil {
 		t.Fatal("Cannot remove distribution " + distroNameN + ": " + err.Error())
 	}
 
