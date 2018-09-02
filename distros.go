@@ -39,38 +39,7 @@ func listDistros(distroDirName string) {
 	}
 }
 
-func downloadOrStartDistro(homeDir, distroDirName, distroName string) {
-
-	// download distro if it does not exist
-	distroDir := distroDirName + PATHSEP + distroName
-	if !directoryExists(distroDir) {
-		if err := downloadDistro(distroDirName, distroName); err != nil {
-
-			// distro not found. Ask user whether to create a new distro
-			fmt.Print("Distribution " + distroName + " does not exist. Create it now? (y/N) ")
-			var input [1]byte
-			_, err = os.Stdin.Read(input[:])
-			if err != nil {
-				fmt.Fprintln(os.Stderr, "Error reading answer")
-				os.Exit(1)
-			}
-
-			// check answer
-			if input[0] == 'y' || input[0] == 'Y' {
-				makeNewDistro(homeDir, distroDir, distroName)
-			}
-
-			os.Exit(0)
-		}
-
-		// if download was successful, return right away
-		// instead of starting the distro because the user
-		// might want to do some configuration first
-		// (e. g. putting proxy variables into init.el) and
-		// it's not much overhead to type ebox <distro> again
-		// or just press <C-p> on a readline-enabled prompt :P
-		return
-	}
+func startDistro(homeDir, distroDir string) {
 
 	// set distro as $HOME
 	originalDistroDir, err := os.Readlink(distroDir)
@@ -94,6 +63,32 @@ func downloadOrStartDistro(homeDir, distroDirName, distroName string) {
 	err = emacsCmd.Start()
 	if err != nil {
 		panic(err)
+	}
+}
+
+func makeDistro(homeDir, distroDirName, distroName string) {
+	distroDir := distroDirName + PATHSEP + distroName
+	if err := downloadDistro(distroDirName, distroName); err != nil {
+
+		// distro not found. Ask user whether to create a new distro
+		fmt.Print("Distribution " + distroName + " does not exist. Create it now? (y/N) ")
+		var input [1]byte
+		_, err = os.Stdin.Read(input[:])
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "Error reading answer")
+			os.Exit(1)
+		}
+
+		// check answer
+		if input[0] == 'y' || input[0] == 'Y' {
+			if err := ensureDirectoryExists(distroDir); err != nil {
+				fmt.Fprintln(os.Stderr, "Cannot mkdir "+distroName)
+				os.Exit(1)
+			}
+			makeInitFile(distroDir)
+		}
+
+		os.Exit(0)
 	}
 }
 
@@ -133,18 +128,6 @@ func downloadDistro(distroDirName, distroUrlOrName string) error {
 	}
 
 	return nil
-}
-
-// makeNewDistro makes the directory for a new distro and fills it with the most
-// basic stuff (needed symlinks, environment variable settings for Emacs, ...)
-func makeNewDistro(homeDir, distroDir, distroName string) {
-
-	if err := ensureDirectoryExists(distroDir); err != nil {
-		fmt.Fprintln(os.Stderr, "Cannot mkdir "+distroName)
-		os.Exit(1)
-	}
-
-	makeInitFile(distroDir)
 }
 
 func ensureSymlinksPresent(homeDir, distroDir string) {

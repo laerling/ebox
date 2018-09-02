@@ -22,10 +22,16 @@ func main() {
 		os.Exit(1)
 	}
 
-	// if argument supplied, start distribution, else list existing distributions
+	// if argument supplied, start or make distribution
 	if len(os.Args) > 1 {
-		downloadOrStartDistro(homeDir, distroDirName, os.Args[1])
+		distroDir := distroDirName + PATHSEP + os.Args[1]
+		if directoryExists(distroDir) {
+			startDistro(homeDir, distroDir)
+		} else {
+			makeDistro(homeDir, distroDirName, os.Args[1])
+		}
 	} else {
+		// else list existing distributions
 		listDistros(distroDirName)
 	}
 }
