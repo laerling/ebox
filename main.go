@@ -22,16 +22,19 @@ func main() {
 		os.Exit(1)
 	}
 
-	// if argument supplied, start or make distribution
-	if len(os.Args) > 1 {
-		distroDir := distroDirName + PATHSEP + os.Args[1]
-		if directoryExists(distroDir) {
-			startDistro(homeDir, distroDir)
-		} else {
-			makeDistro(homeDir, distroDirName, os.Args[1])
-		}
-	} else {
-		// else list existing distributions
+	// list distros, if no argument supplied
+	if len(os.Args) <= 1 {
 		listDistros(distroDirName)
+		os.Exit(0)
 	}
+
+	// start distro, if its directory exists
+	distroDir := distroDirName + PATHSEP + os.Args[1]
+	if directoryExists(distroDir) {
+		startDistro(homeDir, distroDir)
+		os.Exit(0)
+	}
+
+	// create the distribution, if its directory does not already exist
+	createDistro(homeDir, distroDirName, os.Args[1])
 }

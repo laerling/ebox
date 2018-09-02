@@ -66,7 +66,7 @@ func startDistro(homeDir, distroDir string) {
 	}
 }
 
-func makeDistro(homeDir, distroDirName, distroName string) {
+func createDistro(homeDir, distroDirName, distroName string) {
 	distroDir := distroDirName + PATHSEP + distroName
 	if err := downloadDistro(distroDirName, distroName); err != nil {
 
