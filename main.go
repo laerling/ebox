@@ -24,7 +24,7 @@ func main() {
 
 	// list distros, if no argument supplied
 	if len(os.Args) <= 1 {
-		listDistros(distroDirName)
+		panicOnError(listDistros(distroDirName))
 		os.Exit(0)
 	}
 
@@ -36,5 +36,11 @@ func main() {
 	}
 
 	// create the distribution, if its directory does not already exist
-	createDistro(homeDir, distroDirName, os.Args[1])
+	panicOnError(createDistro(homeDir, distroDirName, os.Args[1]))
+}
+
+func panicOnError(err error) {
+	if err != nil {
+		panic(err)
+	}
 }

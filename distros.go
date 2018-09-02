@@ -10,21 +10,21 @@ import (
 	"strings"
 )
 
-func listDistros(distroDirName string) {
+func listDistros(distroDirName string) error {
 
 	// open distro directory
 	distroDir, err := os.Open(distroDirName)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Cannot open directory "+distroDirName)
-		fmt.Fprintln(os.Stderr, "Please make sure that it exists and the permissions are set correctly.")
-		os.Exit(1)
+		return errors.New("Cannot open directory " +
+			distroDirName +
+			". Please make sure that it exists and the permissions are set correctly.")
 	}
 
 	// get distros from distro directory
 	var distros sortableStringSlice
 	distros, err = distroDir.Readdirnames(0)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	// sort filenames alphabetically (case-insensitively)
@@ -37,6 +37,8 @@ func listDistros(distroDirName string) {
 			fmt.Println(distroName)
 		}
 	}
+
+	return nil
 }
 
 func startDistro(homeDir, distroDir string) {
@@ -66,7 +68,7 @@ func startDistro(homeDir, distroDir string) {
 	}
 }
 
-func createDistro(homeDir, distroDirName, distroName string) {
+func createDistro(homeDir, distroDirName, distroName string) error {
 	distroDir := distroDirName + PATHSEP + distroName
 	if err := downloadDistro(distroDirName, distroName); err != nil {
 
@@ -75,21 +77,19 @@ func createDistro(homeDir, distroDirName, distroName string) {
 		var input [1]byte
 		_, err = os.Stdin.Read(input[:])
 		if err != nil {
-			fmt.Fprintln(os.Stderr, "Error reading answer")
-			os.Exit(1)
+			return errors.New("Error reading answer")
 		}
 
 		// check answer
 		if input[0] == 'y' || input[0] == 'Y' {
 			if err := ensureDirectoryExists(distroDir); err != nil {
-				fmt.Fprintln(os.Stderr, "Cannot mkdir "+distroName)
-				os.Exit(1)
+				return errors.New("Cannot mkdir " + distroName)
 			}
 			makeInitFile(distroDir)
 		}
-
-		os.Exit(0)
 	}
+
+	return nil
 }
 
 func downloadDistro(distroDirName, distroUrlOrName string) error {
