@@ -70,24 +70,30 @@ func startDistro(homeDir, distroDir string) {
 
 func createDistro(homeDir, distroDirName, distroName string) error {
 	distroDir := distroDirName + PATHSEP + distroName
-	if err := downloadDistro(distroDirName, distroName); err != nil {
-
-		// distro not found. Ask user whether to create a new distro
-		fmt.Print("Distribution " + distroName + " does not exist. Create it now? (y/N) ")
-		var input [1]byte
-		_, err = os.Stdin.Read(input[:])
-		if err != nil {
-			return errors.New("Error reading answer")
-		}
-
-		// check answer
-		if input[0] == 'y' || input[0] == 'Y' {
-			if err := ensureDirectoryExists(distroDir); err != nil {
-				return errors.New("Cannot mkdir " + distroName)
-			}
-			makeInitFile(distroDir)
-		}
+	if err := downloadDistro(distroDirName, distroName); err == nil {
+		return nil
 	}
+
+	// distro not found. Ask user whether to create a new distro
+	fmt.Print("Distribution " + distroName + " does not exist. Create it now? (y/N) ")
+	var input [1]byte
+	_, err := os.Stdin.Read(input[:])
+	if err != nil {
+		return errors.New("Error reading answer")
+	}
+
+	// check answer
+	if input[0] != 'y' && input[0] != 'Y' {
+		return nil
+	}
+
+	// create new distro
+	if err := ensureDirectoryExists(distroDir); err != nil {
+		return errors.New("Cannot mkdir " + distroName)
+	}
+
+	// prepare distro
+	makeInitFile(distroDir)
 
 	return nil
 }
@@ -142,14 +148,19 @@ func ensureSymlinksPresent(homeDir, distroDir string) {
 
 	// create symlinks
 	for _, linkName := range symlinks {
-		from := homeDir + PATHSEP + linkName
-		to := distroDir + PATHSEP + linkName
-		_, err := os.Stat(from)
-		if err == nil {
-			err := os.Symlink(from, to)
-			if err == nil {
-				fmt.Println("Created symlink " + to + " -> " + from)
-			}
+
+		source := homeDir + PATHSEP + linkName
+		target := distroDir + PATHSEP + linkName
+
+		// skip if source does not exist
+		_, err := os.Stat(source)
+		if err != nil {
+			continue
+		}
+
+		// make symlink
+		if err := os.Symlink(source, target); err == nil {
+			fmt.Println("Created symlink " + target + " -> " + source)
 		}
 	}
 }
@@ -162,12 +173,16 @@ func makeInitFile(distroDir string) {
 
 	// make string to write to init.el
 	initElString := ""
+
+	// append http_proxy
 	if envHttpProxy != "" {
 		envHttpProxySplitted := strings.Split(envHttpProxy, "://")
 		initElString += "\n     (\"" +
 			envHttpProxySplitted[0] + "\" . \"" +
 			envHttpProxySplitted[1] + "\")"
 	}
+
+	// append https_proxy
 	if envHttpsProxy != "" {
 		envHttpsProxySplitted := strings.Split(envHttpsProxy, "://")
 		initElString += "\n     (\"" +
@@ -175,20 +190,21 @@ func makeInitFile(distroDir string) {
 			envHttpsProxySplitted[1] + "\")"
 	}
 
-	// write to init.el
-	if initElString != "" {
-		// make .emacs.d
-		emacsDir := distroDir + PATHSEP + ".emacs.d"
-		ensureDirectoryExists(emacsDir)
+	// return if nothing to write
+	if initElString == "" {
+		return
+	}
 
-		// write init.el
-		stringToWrite := []byte("(set 'url-proxy-services '(" + initElString + "))\n\n")
-		initFileName := emacsDir + PATHSEP + "init.el"
-		err := ioutil.WriteFile(initFileName, stringToWrite, 0644)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, "Cannot write to init.el."+
-				" This could make the distribution unusable."+
-				" Please check the init.el file manually")
-		}
+	// make .emacs.d directory
+	emacsDir := distroDir + PATHSEP + ".emacs.d"
+	ensureDirectoryExists(emacsDir)
+
+	// write init.el
+	stringToWrite := []byte("(set 'url-proxy-services '(" + initElString + "))\n\n")
+	initFileName := emacsDir + PATHSEP + "init.el"
+	if err := ioutil.WriteFile(initFileName, stringToWrite, 0644); err != nil {
+		fmt.Fprintln(os.Stderr, "Cannot write to init.el."+
+			" This could make the distribution unusable."+
+			" Please check the init.el file manually")
 	}
 }
