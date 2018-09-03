@@ -144,6 +144,8 @@ func ensureSymlinksPresent(homeDir, distroDir string) {
 		".cargo",
 		".config",
 		".gnupg",
+		".local",
+		".mozilla",
 	}
 
 	// create symlinks
