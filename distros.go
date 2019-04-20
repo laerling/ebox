@@ -143,6 +143,7 @@ func ensureSymlinksPresent(homeDir, distroDir string) {
 		".cache",
 		".cargo",
 		".config",
+		".gitconfig",
 		".gnupg",
 		".local",
 		".mozilla",
