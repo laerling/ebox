@@ -147,6 +147,7 @@ func ensureSymlinksPresent(homeDir, distroDir string) {
 		".gnupg",
 		".local",
 		".mozilla",
+		".rustup",
 	}
 
 	// create symlinks
