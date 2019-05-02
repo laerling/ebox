@@ -71,6 +71,7 @@ func startDistro(homeDir, distroDir string) {
 func createDistro(homeDir, distroDirName, distroName string) error {
 	distroDir := distroDirName + PATHSEP + distroName
 	if err := downloadDistro(distroDirName, distroName); err == nil {
+		startDistro(homeDir, distroDir)
 		return nil
 	}
 
