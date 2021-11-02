@@ -127,7 +127,7 @@ func downloadDistro(distroDirName, distroUrlOrName string) error {
 
 	// make git command
 	destinationEmacsDir := destinationDir + PATHSEP + ".emacs.d"
-	gitCmd := exec.Command(gitExe, "clone", distroUrl, destinationEmacsDir)
+	gitCmd := exec.Command(gitExe, "clone", "--depth", "1", distroUrl, destinationEmacsDir)
 
 	// show git running
 	gitCmd.Stdout = os.Stdout
